@@ -1,0 +1,63 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-project-az-de-ingestion-training"
+		},
+		"LSAzureSqlDatabase1_password": {
+			"value": ""
+		},
+		"LS_Raw_Rest_Parquet_accountKey": {
+			"value": ""
+		},
+		"LS_Self_AzureDataLakeStorage_accountKey": {
+			"value": ""
+		},
+		"LS_SqlServer_password": {
+			"value": ""
+		},
+		"LSAzureSqlDatabase1_properties_typeProperties_server": {
+			"value": "sql-project-srv-az-de-training.database.windows.net"
+		},
+		"LSAzureSqlDatabase1_properties_typeProperties_database": {
+			"value": "sql-project-db-az-training"
+		},
+		"LSAzureSqlDatabase1_properties_typeProperties_userName": {
+			"value": "dev_access_data"
+		},
+		"LS_AzureBlobStorage_Source_properties_typeProperties_serviceEndpoint": {
+			"value": "@{linkedService().system_acc_lock}"
+		},
+		"LS_AzureDataLakeStorage1_properties_typeProperties_url": {
+			"value": "@{linkedService().adls_storage_acc_lock}"
+		},
+		"LS_Excel_properties_typeProperties_serviceEndpoint": {
+			"value": "@{linkedService().system_Assigned_lock}"
+		},
+		"LS_Raw_Rest_Parquet_properties_typeProperties_url": {
+			"value": "https://adlsprojectazderaw.dfs.core.windows.net/"
+		},
+		"LS_Self_AzureDataLakeStorage_properties_typeProperties_url": {
+			"value": "https://adlsprojectdesrv.dfs.core.windows.net/"
+		},
+		"LS_SqlServer_properties_typeProperties_server": {
+			"value": "APOORV_PRATEEK\\SQLEXPRESS"
+		},
+		"LS_SqlServer_properties_typeProperties_database": {
+			"value": "deproject"
+		},
+		"LS_SqlServer_properties_typeProperties_userName": {
+			"value": "APK"
+		},
+		"RestService1_properties_typeProperties_url": {
+			"value": "https://api.sheetbest.com/sheets/addde0aa-8175-43d5-836c-7355ab2a73ad"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
