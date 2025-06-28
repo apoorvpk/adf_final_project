@@ -1,0 +1,17 @@
+{
+	"name": "LS_Excel",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"system_Assigned_lock": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"serviceEndpoint": "@{linkedService().system_Assigned_lock}",
+			"accountKind": "BlobStorage"
+		}
+	}
+}

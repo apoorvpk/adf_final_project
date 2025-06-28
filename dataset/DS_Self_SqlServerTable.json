@@ -1,0 +1,17 @@
+{
+	"name": "DS_Self_SqlServerTable",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SqlServer",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "SqlServerTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "International sale Report"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,302 @@
+{
+	"name": "L5_csv",
+	"properties": {
+		"activities": [
+			{
+				"name": "get_job_dtls",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[get_job_dtls]",
+						"storedProcedureParameters": {
+							"TriggerName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.Trigger",
+									"type": "Expression"
+								}
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzureSqlTable1",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "sp_start_log_entry",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "get_job_dtls",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[start_log_entry]",
+					"storedProcedureParameters": {
+						"jobid": {
+							"value": {
+								"value": "@activity('get_job_dtls').output.firstRow.jobid",
+								"type": "Expression"
+							},
+							"type": "Int32"
+						},
+						"pipeline_id": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LSAzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Copy_csv",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Set_mapping",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_DelimitedText1",
+						"type": "DatasetReference",
+						"parameters": {
+							"blob_storage_acc_lock": {
+								"value": "@activity('get_job_dtls').output.firstRow.SourceAccount",
+								"type": "Expression"
+							},
+							"col_delimiter": {
+								"value": "@activity('get_job_dtls').output.firstRow.delimter",
+								"type": "Expression"
+							},
+							"file": {
+								"value": "@activity('get_job_dtls').output.firstRow.Sourcefile",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_Parquet_Raw",
+						"type": "DatasetReference",
+						"parameters": {
+							"adls_storage_acc_lock": {
+								"value": "@activity('get_job_dtls').output.firstRow.TargetAccount",
+								"type": "Expression"
+							},
+							"directory": {
+								"value": "@activity('get_job_dtls').output.firstRow.tgt_dir",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "sp_end_success_log_entry",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Copy_csv",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[end_log_entry]",
+					"storedProcedureParameters": {
+						"error": {
+							"value": "",
+							"type": "String"
+						},
+						"jobid": {
+							"value": {
+								"value": "@activity('get_job_dtls').output.firstRow.jobid",
+								"type": "Expression"
+							},
+							"type": "Int32"
+						},
+						"pipeline_id": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LSAzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "sp_end_fail_log_entry",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Copy_csv",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[end_log_entry]",
+					"storedProcedureParameters": {
+						"error": {
+							"value": {
+								"value": "@activity('Copy_csv').error.message",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"jobid": {
+							"value": {
+								"value": "@activity('get_job_dtls').output.firstRow.jobid",
+								"type": "Expression"
+							},
+							"type": "Int32"
+						},
+						"pipeline_id": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LSAzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Set_mapping",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "sp_start_log_entry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "Mapping",
+					"value": "{\n            \"type\": \"TabularTranslator\",\n            \"mappings\": [\n                {\n                    \"source\": {\n                        \"name\": \"index\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"index\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Order ID\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"OrderID\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Date\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"Date\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Status\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"Status\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Fulfilment\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"Fulfilment\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Sales Channel \",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"SalesChannel \",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"ship-service-level\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"shipservicelevel\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Style\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"Style\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"SKU\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"SKU\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Category\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"Category\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Size\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"Size\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"ASIN\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"ASIN\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Courier Status\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"CourierStatus\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Qty\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"Qty\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"currency\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"currency\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Amount\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"Amount\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"ship-city\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"shipcity\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"ship-state\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"ship-state\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"ship-postal-code\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"shippostalcode\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"ship-country\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"shipcountry\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"promotion-ids\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"promotionids\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"B2B\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"B2B\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"fulfilled-by\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"fulfilledby\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                },\n                {\n                    \"source\": {\n                        \"name\": \"Unnamed: 22\",\n                        \"type\": \"String\",\n                        \"physicalType\": \"String\"\n                    },\n                    \"sink\": {\n                        \"name\": \"Unnamed\",\n                        \"physicalType\": \"UTF8\"\n                    }\n                }\n            ],\n            \"typeConversion\": true,\n            \"typeConversionSettings\": {\n                \"allowDataTruncation\": true,\n                \"treatBooleanAsNumber\": false\n            }\n        }\n"
+				}
+			}
+		],
+		"parameters": {
+			"Trigger": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"Mapping": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-06-22T15:33:29Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

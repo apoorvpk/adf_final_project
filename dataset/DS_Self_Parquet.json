@@ -1,0 +1,21 @@
+{
+	"name": "DS_Self_Parquet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_Self_AzureDataLakeStorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "international_sales",
+				"fileSystem": "onpremisesql"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

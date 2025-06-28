@@ -1,0 +1,17 @@
+{
+	"name": "LS_AzureBlobStorage_Source",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"system_acc_lock": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"serviceEndpoint": "@{linkedService().system_acc_lock}",
+			"accountKind": "BlobStorage"
+		}
+	}
+}

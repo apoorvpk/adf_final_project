@@ -1,0 +1,9 @@
+{
+	"name": "adf-project-az-de-ingestion-training",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "9d035832-19be-4fb9-9c77-c02580051613",
+		"tenantId": "12b4fbf9-dea8-4490-bede-9cc40309ad61"
+	}
+}
