@@ -146,7 +146,8 @@
 									"physicalType": "smallint"
 								},
 								"sink": {
-									"name": "GROSS_AMOUNT",
+									"name": "GROSS_AMT",
+									"type": "Int16",
 									"physicalType": "smallint"
 								}
 							}
